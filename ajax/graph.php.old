@@ -1,0 +1,85 @@
+<?php
+
+if (array_key_exists('uri', $_POST))
+	$uri = $_POST['uri'];
+else if(array_key_exists('uri', $_GET))
+	$uri = $_GET['uri'];
+else
+	exit();
+
+if (! is_string($uri))
+	exit();
+
+// This fixes some mime-type sniffing fail in functions-global.php
+define('CAN_SERVE_RDFXML', false);
+require_once '../inc/functions.php';
+// $QUERY_DEBUG = true;
+
+require_once 'crs3/crs3.class.php';
+
+// Connect to the DB!
+$crs = new CRS3('localhost', 'crs3_test');
+//$crs = new CRS3('localhost', 'crs3_ibm');
+//$crs = new CRS3('localhost', 'crs3_dblp');
+
+$query = "SELECT DISTINCT u2.hash, b.id, b.canon FROM symbols s JOIN uris u1 JOIN bundles b JOIN uris u2 WHERE s.lexical = '<$uri>' AND s.hash = u1.hash AND u1.bundleID = b.id AND b.active = 1 AND u2.bundleID = b.id";
+$res = mysql_query($query, $crs->db);
+
+$bundle_id = -1;
+$canon_id = -1;
+$canon_hash = null;
+$hashes = array();
+while ($row = mysql_fetch_assoc($res)){
+	$hashes[] = $row['hash'];
+	$bundle_id = intval($row['id']);
+	$canon_hash = $row['canon'];
+}
+
+$uri_list = array();
+$equivs = array();
+
+if ($bundle_id != -1)
+{
+	$list = '(' . implode(',', $hashes) .')';
+
+	$query = "SELECT s1.lexical as uri1, s1.hash as hash1, s2.lexical as uri2, s2.hash as hash2 FROM history h JOIN symbols s1 ON h.data3 = s1.hash JOIN symbols s2 ON h.data4 = s2.hash where h.data3 IN $list AND h.data4 IN $list;";
+
+	$res = mysql_query($query, $crs->db);
+	$uri_map = array();
+
+	while ($row = mysql_fetch_assoc($res))
+	{
+		$uri1 = stripBothEnds($row['uri1']);
+		$uri2 = stripBothEnds($row['uri2']);
+	
+		$uri1_id = -1;
+		$uri2_id = -1;
+		if (! array_key_exists($uri1, $uri_map))
+		{
+			$uri1_id = count($uri_list);
+			array_push($uri_list, $uri1);
+			$uri_map[$uri1] = $uri1_id;
+		} else {
+			$uri1_id = $uri_map[$uri1];
+		}
+		if (! array_key_exists($uri2, $uri_map))
+		{
+			$uri2_id = count($uri_list);
+			array_push($uri_list, $uri2);
+			$uri_map[$uri2] = $uri2_id;
+		} else {
+			$uri2_id = $uri_map[$uri2];
+		}
+		
+		if ($row['hash1'] == $canon_hash)	$canon_id = $uri1_id;
+		if ($row['hash2'] == $canon_hash)	$canon_id = $uri2_id;
+	
+		$equivs[$uri1_id][] = $uri2_id;
+		$equivs[$uri2_id][] = $uri1_id;
+	}
+}
+
+$json = array($bundle_id, $canon_id, $uri_list, $equivs);
+
+header('Content-Type: application/json');
+echo json_encode($json);

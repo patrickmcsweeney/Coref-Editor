@@ -1,0 +1,25 @@
+Wishlist
+
+3. control/adjusting the split between graph and tabular views would be
+nice. might need to look at where is best to put scrolling (entire
+screen, or individual bundle info panels?)
+
+I think you will need another expand/collapse for each predicate of a bundle, or maybe each node; if you think about what S. Campbell would look like if there was as much info as for Nigel on each node, something has to give. A related (same?) problem is that a line in a person pane means a new predicate in a new bundle – that is it has two meanings, and the only cue is the bundle number.
+
+also, clicking or hovering over a URI/row in the selected bundle should
+have some reflection in the graph perhaps?  but these are minor points,
+get it working first :)
+
+is there any reason only showing triples that have literal values?
+(is it useful to show links to other RDF resources?)
+
+Fix
+
+for the record, if I merge from the right into the left, then the left +s
+change to the number of the bundle I merged from, instead of staying the
+same and letting me merge with the top right.
+
+it might be worth tweaking the focus/display of the selected URI within the selected bundle
+highlight all rows stemming from that URI in a more prominent color
+(#FF0 or #FF8?) and also the background of the URI in the graph itself.
+

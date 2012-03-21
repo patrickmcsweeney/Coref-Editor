@@ -1,0 +1,2 @@
+RewriteEngine On
+RewriteRule search.php http://test.rkbexplorer.com/browse/get-uris.php [P,QSA]
